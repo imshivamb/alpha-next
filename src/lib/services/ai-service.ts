@@ -86,14 +86,32 @@ const AIService = {
     feedback: string
   ): Promise<CopywriterSuggestion[]> => {
     const response = await apiClient.post('/ai/copywriter', { content, feedback })
+    
+    // Check if we have a raw_response in the data
+    const data = response.data
+    if (data && data.raw_response) {
+      // If we have a raw response, include it in the first suggestion
+      return [
+        {
+          original: 'Original draft',
+          suggestion: data.raw_response,
+          explanation: 'Updated content based on your feedback',
+          raw_response: data.raw_response
+        }
+      ]
+    }
+    
     return response.data
   },
   
   smartSuggestions: async (
-    content: string, 
-    selection: string
+    surrounding_content: string, 
+    selected_text: string
   ): Promise<SmartSuggestion[]> => {
-    const response = await apiClient.post('/ai/smart-suggestions', { content, selection })
+    const response = await apiClient.post('/ai/smart-suggestions', { 
+      selected_text, 
+      surrounding_content 
+    })
     return response.data
   },
   

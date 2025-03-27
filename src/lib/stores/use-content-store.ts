@@ -334,44 +334,64 @@ export const useContentStore = create<ContentState>((set, get) => ({
   createDraft: async (userId: number, angleId: number) => {
     try {
       // First check if we already have a draft with a matching angle ID
-      const existingDraft = get().draft
-      if (existingDraft && existingDraft.angle_id === angleId) {
-        return existingDraft
+      const existingDraft = get().draft;
+      
+      // More thorough check for existing draft with the same angle ID
+      if (existingDraft && 
+          existingDraft.angle_id === angleId && 
+          existingDraft.content && 
+          existingDraft.content.trim().length > 0) {
+        console.log('Using existing draft with matching angle ID:', angleId);
+        return existingDraft;
       }
 
-      set({ draftLoading: true, draftError: null })
-      const draft = await ContentService.createDraft(userId, angleId)
+      set({ draftLoading: true, draftError: null });
+      console.log('Creating new draft for angle ID:', angleId);
+      const draft = await ContentService.createDraft(userId, angleId);
       set({ 
         draft,
         draftLoading: false 
-      })
-      return draft
+      });
+      return draft;
     } catch (error) {
-      console.error('Failed to create draft:', error)
+      console.error('Failed to create draft:', error);
       set({ 
         draftLoading: false, 
         draftError: 'Failed to create draft' 
-      })
-      return null
+      });
+      return null;
     }
   },
   
   createDraftFromBrief: async (userId: number) => {
     try {
-      set({ draftLoading: true, draftError: null })
-      const draft = await ContentService.createDraftFromBrief(userId)
+      // Check if we already have a draft without an angle ID
+      const existingDraft = get().draft;
+      
+      // More thorough check for existing direct-from-brief draft
+      if (existingDraft && 
+          !existingDraft.angle_id && 
+          existingDraft.content && 
+          existingDraft.content.trim().length > 0) {
+        console.log('Using existing draft created directly from brief');
+        return existingDraft;
+      }
+
+      set({ draftLoading: true, draftError: null });
+      console.log('Creating new draft directly from brief');
+      const draft = await ContentService.createDraftFromBrief(userId);
       set({ 
         draft,
         draftLoading: false 
-      })
-      return draft
+      });
+      return draft;
     } catch (error) {
-      console.error('Failed to create draft from brief:', error)
+      console.error('Failed to create draft from brief:', error);
       set({ 
         draftLoading: false, 
         draftError: 'Failed to create draft from content brief' 
-      })
-      return null
+      });
+      return null;
     }
   },
   

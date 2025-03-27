@@ -115,6 +115,7 @@ export interface CopywriterSuggestion {
   original: string
   suggestion: string
   explanation: string
+  raw_response?: string
 }
 
 export interface SmartSuggestion {
@@ -144,6 +145,6 @@ export interface CopywriterRequest {
 }
 
 export interface SmartSuggestionsRequest {
-  content: string
-  selection: string
+  surrounding_content: string
+  selected_text: string
 } 

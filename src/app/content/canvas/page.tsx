@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useContentStore } from "@/lib/stores/use-content-store";
 import { useAIStore } from "@/lib/stores/use-ai-store";
@@ -16,19 +16,12 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import ContentBriefEditor from "@/components/content-brief/content-brief-editor";
+import { FileText, Eye, RefreshCw, Save, PlusCircle } from "lucide-react";
 import {
-  FileText,
-  Send,
-  Sparkles,
-  Save,
-  Eye,
-  RefreshCw,
-  MessagesSquare,
-  X,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { PreviewModal } from "@/components/content-canvas";
-import { SmartSuggestion, CopywriterSuggestion } from "@/lib/types/ai";
+  PreviewModal,
+  CopywriterAgent,
+  SmartSuggestionsManager,
+} from "@/components/content-canvas";
 
 export default function ContentCanvasPage() {
   const { userId } = useCurrentUser();
@@ -36,22 +29,13 @@ export default function ContentCanvasPage() {
   const angleId = searchParams.get("angleId");
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Added to track whether we've already loaded the draft
+  const hasInitializedDraft = useRef(false);
+
   // States
   const [briefSheetOpen, setBriefSheetOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [draftContent, setDraftContent] = useState("");
-  const [selectedText, setSelectedText] = useState("");
-  const [textSelectionPosition, setTextSelectionPosition] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-  const [smartSuggestions, setSmartSuggestions] = useState<string[]>([]);
-  const [copywriterMessage, setCopywriterMessage] = useState("");
-  const [copywriterChat, setCopywriterChat] = useState<
-    Array<{ role: "user" | "ai"; content: string }>
-  >([]);
-  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
-  const [isProcessingCopywriter, setIsProcessingCopywriter] = useState(false);
   const [finalAnalysis, setFinalAnalysis] = useState<string | null>(null);
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -61,7 +45,6 @@ export default function ContentCanvasPage() {
     brief,
     getBrief,
     selectedAngle,
-    getAngles,
     getAngleById,
     briefLoading,
     draft,
@@ -72,20 +55,31 @@ export default function ContentCanvasPage() {
     resetDraft,
   } = useContentStore();
 
-  const { getSmartSuggestions, getCopywriterSuggestions, getFinalAnalysis } =
-    useAIStore();
+  const { getFinalAnalysis } = useAIStore();
 
-  // Ref for smart suggestions timeout
-  const suggestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // First effect - Reset draft state on mount to avoid stale data
+  useEffect(() => {
+    resetDraft();
+  }, [resetDraft]);
 
-  // Load draft and angle when the component mounts
+  // Second effect - Load draft and angle when the component mounts
+  // This is the main logic that needs to be fixed to prevent multiple API calls
   useEffect(() => {
     if (!userId) return;
 
-    // Reset draft state when component mounts to avoid stale draft data
-    resetDraft();
+    // Prevent multiple draft loading by checking if we've already initialized
+    if (hasInitializedDraft.current) {
+      console.log("Draft already initialized, skipping load");
+      return;
+    }
 
     const loadData = async () => {
+      // Check if we're already loading
+      if (isLoadingDraft) {
+        console.log("Already loading draft, skipping duplicate load");
+        return;
+      }
+
       setIsLoadingDraft(true);
       setDraftError(null);
 
@@ -121,6 +115,7 @@ export default function ContentCanvasPage() {
         // Set the draft content if we have valid content
         if (currentDraft && currentDraft.content) {
           setDraftContent(currentDraft.content);
+          hasInitializedDraft.current = true;
         } else {
           setDraftError(
             "Failed to load draft content. Please try refreshing the page."
@@ -142,88 +137,28 @@ export default function ContentCanvasPage() {
     userId,
     angleId,
     getBrief,
-    getAngles,
     getAngleById,
     createDraft,
     createDraftFromBrief,
     brief,
     selectedAngle,
-    resetDraft,
+    isLoadingDraft,
   ]);
-
-  // Delay (debounce) smart suggestions to avoid excessive API calls
-  const debouncedHandleSmartSuggestions = useCallback(
-    (text: string) => {
-      if (!text || text.length < 5) return;
-
-      // Clear any existing timeout
-      if (suggestionsTimeoutRef.current) {
-        clearTimeout(suggestionsTimeoutRef.current);
-        suggestionsTimeoutRef.current = null;
-      }
-
-      // Set loading state immediately
-      setIsGeneratingSuggestions(true);
-
-      // Set a new timeout (500ms delay)
-      suggestionsTimeoutRef.current = setTimeout(async () => {
-        try {
-          const suggestions = await getSmartSuggestions(draftContent, text);
-          if (suggestions) {
-            setSmartSuggestions(
-              suggestions.map((s: SmartSuggestion) => s.suggestion)
-            );
-          }
-        } catch (error) {
-          console.error("Failed to generate smart suggestions:", error);
-        } finally {
-          setIsGeneratingSuggestions(false);
-        }
-      }, 500);
-    },
-    [draftContent, getSmartSuggestions]
-  );
-
-  // Handle text selection for smart suggestions
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      if (
-        !selection ||
-        selection.rangeCount === 0 ||
-        selection.toString().trim() === ""
-      ) {
-        setSelectedText("");
-        setTextSelectionPosition(null);
-        return;
-      }
-
-      const text = selection.toString().trim();
-      if (text && text !== selectedText && text.length > 5) {
-        setSelectedText(text);
-
-        // Get position
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        setTextSelectionPosition({
-          top: rect.top + window.scrollY - 80, // Position above the selection
-          left: rect.left + window.scrollX + rect.width / 2 - 150, // Center horizontally
-        });
-
-        // Generate suggestions with debounce
-        debouncedHandleSmartSuggestions(text);
-      }
-    };
-
-    document.addEventListener("selectionchange", handleSelectionChange);
-    return () => {
-      document.removeEventListener("selectionchange", handleSelectionChange);
-    };
-  }, [selectedText, debouncedHandleSmartSuggestions]);
 
   // Handlers
   const handleDraftChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDraftContent(e.target.value);
+  };
+
+  const handleUpdateDraft = (newContent: string) => {
+    setDraftContent(newContent);
+  };
+
+  const resetDraftState = () => {
+    hasInitializedDraft.current = false;
+    resetDraft();
+    setDraftContent("");
+    setDraftError(null);
   };
 
   const handleSaveDraft = async () => {
@@ -233,116 +168,6 @@ export default function ContentCanvasPage() {
       await enhanceDraft(userId, draftContent);
     } catch (error) {
       console.error("Failed to save draft:", error);
-    }
-  };
-
-  const handleGenerateSmartSuggestions = async (text: string) => {
-    if (!text || text.length < 5) return;
-
-    setIsGeneratingSuggestions(true);
-    try {
-      const suggestions = await getSmartSuggestions(draftContent, text);
-      if (suggestions) {
-        setSmartSuggestions(
-          suggestions.map((s: SmartSuggestion) => s.suggestion)
-        );
-      }
-    } catch (error) {
-      console.error("Failed to generate smart suggestions:", error);
-    } finally {
-      setIsGeneratingSuggestions(false);
-    }
-  };
-
-  const handleApplySuggestion = (suggestion: string) => {
-    if (!selectedText) return;
-
-    // Replace the selected text with the suggestion
-    const newContent = draftContent.replace(selectedText, suggestion);
-    setDraftContent(newContent);
-
-    // Clear selection and suggestions
-    setSelectedText("");
-    setSmartSuggestions([]);
-  };
-
-  const handleCopywriterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!copywriterMessage.trim()) return;
-
-    // Add user message to chat
-    const newMessage = { role: "user" as const, content: copywriterMessage };
-    setCopywriterChat([...copywriterChat, newMessage]);
-
-    // Clear input
-    setCopywriterMessage("");
-
-    // Process with AI
-    setIsProcessingCopywriter(true);
-    try {
-      const response = await getCopywriterSuggestions(
-        draftContent,
-        copywriterMessage
-      );
-      if (response) {
-        // Create a combined response message
-        const aiResponse = response
-          .map(
-            (s: CopywriterSuggestion) =>
-              `${s.original ? `Original: "${s.original}"\n` : ""}Suggestion: "${
-                s.suggestion
-              }"\n${s.explanation}`
-          )
-          .join("\n\n");
-
-        // Add AI response to chat
-        setCopywriterChat((prev) => [
-          ...prev,
-          { role: "ai", content: aiResponse },
-        ]);
-      }
-    } catch (error) {
-      console.error("Failed to get copywriter response:", error);
-      setCopywriterChat((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
-    } finally {
-      setIsProcessingCopywriter(false);
-    }
-  };
-
-  const handleQuickEnhancement = async (enhancementType: string) => {
-    if (!draftContent.trim()) return;
-
-    setIsProcessingCopywriter(true);
-    try {
-      const message = `Make the content ${enhancementType}`;
-      const suggestions = await getCopywriterSuggestions(draftContent, message);
-
-      if (suggestions && suggestions.length > 0) {
-        // Add the conversation to chat
-        setCopywriterChat((prev) => [
-          ...prev,
-          { role: "user", content: message },
-          {
-            role: "ai",
-            content: `Here are some suggestions to make your content ${enhancementType}:\n\n${suggestions
-              .map(
-                (s: CopywriterSuggestion, i: number) =>
-                  `${i + 1}. ${s.suggestion} - ${s.explanation}`
-              )
-              .join("\n\n")}`,
-          },
-        ]);
-      }
-    } catch (error) {
-      console.error("Failed to enhance content:", error);
-    } finally {
-      setIsProcessingCopywriter(false);
     }
   };
 
@@ -427,6 +252,15 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
 
               <Button
                 variant="outline"
+                onClick={resetDraftState}
+                className="flex items-center gap-2"
+              >
+                <PlusCircle className="h-4 w-4" />
+                New Draft
+              </Button>
+
+              <Button
+                variant="outline"
                 onClick={handleSaveDraft}
                 className="flex items-center gap-2"
                 disabled={draftLoading}
@@ -448,100 +282,10 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
           <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
             {/* Left column - Copywriter Agent */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm border h-[calc(100vh-160px)] flex flex-col">
-                <div className="p-4 border-b">
-                  <h2 className="text-xl font-semibold flex items-center">
-                    <MessagesSquare className="h-5 w-5 mr-2" />
-                    Copywriter Agent
-                  </h2>
-                </div>
-
-                {/* Quick enhancements */}
-                <div className="p-4 border-b flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickEnhancement("more professional")}
-                    className="text-xs"
-                  >
-                    Make Professional
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickEnhancement("more concise")}
-                    className="text-xs"
-                  >
-                    Make Concise
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickEnhancement("more engaging")}
-                    className="text-xs"
-                  >
-                    Make Engaging
-                  </Button>
-                </div>
-
-                {/* Chat messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {copywriterChat.length === 0 ? (
-                    <div className="text-center text-gray-500 mt-8">
-                      <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>
-                        Ask the copywriter agent for suggestions or improvements
-                      </p>
-                    </div>
-                  ) : (
-                    copywriterChat.map((message, i) => (
-                      <div
-                        key={i}
-                        className={`${
-                          message.role === "user"
-                            ? "bg-blue-50 ml-4"
-                            : "bg-gray-50 mr-4"
-                        } p-3 rounded-lg`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">
-                          {message.content}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                  {isProcessingCopywriter && (
-                    <div className="bg-gray-50 p-3 rounded-lg mr-4 flex items-center">
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2 opacity-70" />
-                      <p className="text-sm text-gray-500">Thinking...</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Chat input */}
-                <form
-                  onSubmit={handleCopywriterSubmit}
-                  className="p-4 border-t"
-                >
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={copywriterMessage}
-                      onChange={(e) => setCopywriterMessage(e.target.value)}
-                      placeholder="Ask the copywriter for suggestions..."
-                      className="flex-1 p-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <Button
-                      type="submit"
-                      className="rounded-l-none"
-                      disabled={
-                        isProcessingCopywriter || !copywriterMessage.trim()
-                      }
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </form>
-              </div>
+              <CopywriterAgent
+                draftContent={draftContent}
+                onUpdateDraft={handleUpdateDraft}
+              />
             </div>
 
             {/* Middle column - Draft Editor */}
@@ -596,6 +340,7 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
                     </div>
                   ) : (
                     <textarea
+                      ref={textAreaRef}
                       className="w-full h-full p-4 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                       value={draftContent}
                       onChange={handleDraftChange}
@@ -604,42 +349,12 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
                   )}
 
                   {/* Smart Suggestions Panel */}
-                  {selectedText && (
-                    <div className="absolute bottom-4 right-4 w-64 p-3 bg-white border rounded-lg shadow-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">
-                          Smart Suggestions
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => setSelectedText("")}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      {isGeneratingSuggestions ? (
-                        <div className="flex items-center justify-center py-2">
-                          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                          <span className="text-xs">
-                            Generating suggestions...
-                          </span>
-                        </div>
-                      ) : (
-                        smartSuggestions.map((suggestion, index) => (
-                          <Button
-                            key={index}
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start text-xs mb-1 h-auto py-1.5 px-2"
-                            onClick={() => handleApplySuggestion(suggestion)}
-                          >
-                            {suggestion}
-                          </Button>
-                        ))
-                      )}
-                    </div>
+                  {textAreaRef.current && (
+                    <SmartSuggestionsManager
+                      draftContent={draftContent}
+                      textareaRef={textAreaRef}
+                      onUpdateText={handleUpdateDraft}
+                    />
                   )}
                 </div>
               </div>

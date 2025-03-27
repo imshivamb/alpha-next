@@ -24,7 +24,7 @@ interface AIState {
   getAudienceAnalysis: (content: string, audiences: string[]) => Promise<Record<string, AudienceAnalysisResult> | null>
   getFinalAnalysis: (content: string, brief: Record<string, unknown>) => Promise<FinalAnalysisResult | null>
   getCopywriterSuggestions: (content: string, feedback: string) => Promise<CopywriterSuggestion[] | null>
-  getSmartSuggestions: (content: string, selection: string) => Promise<SmartSuggestion[] | null>
+  getSmartSuggestions: (surrounding_content: string, selected_text: string) => Promise<SmartSuggestion[] | null>
   getUsage: () => Promise<AIUsage | null>
   resetResults: () => void
 }
@@ -105,10 +105,10 @@ export const useAIStore = create<AIState>((set) => ({
     }
   },
   
-  getSmartSuggestions: async (content: string, selection: string) => {
+  getSmartSuggestions: async (surrounding_content: string, selected_text: string) => {
     try {
       set({ isLoading: true, error: null })
-      const suggestions = await AIService.smartSuggestions(content, selection)
+      const suggestions = await AIService.smartSuggestions(surrounding_content, selected_text)
       set({ smartSuggestions: suggestions, isLoading: false })
       return suggestions
     } catch (error) {
