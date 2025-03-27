@@ -51,7 +51,6 @@ export default function ContentAnglesPage() {
     anglesError,
     selectAngle,
     selectedAngle,
-    createDraft,
   } = useContentStore();
 
   const [isEditingBrief, setIsEditingBrief] = useState(false);
@@ -60,21 +59,31 @@ export default function ContentAnglesPage() {
   const [generatingAngles, setGeneratingAngles] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Load brief and automatically generate angles when the component mounts
+  // Load brief and angles when the component mounts
   useEffect(() => {
     if (userId) {
       const loadData = async () => {
         console.log("Entry ID from URL:", entryId);
 
-        // Load brief first
-        const briefResult = await getBrief(userId);
-        if (briefResult) {
-          setEditableBrief(briefResult);
+        // Only fetch brief if not already loaded
+        if (!brief && !briefLoading) {
+          const briefResult = await getBrief(userId);
+          if (briefResult) {
+            setEditableBrief(briefResult);
+          }
+        } else if (brief && !editableBrief) {
+          setEditableBrief(brief);
+        }
 
-          // Then load existing angles or generate new ones
+        // Only fetch angles if not already loaded or being loaded
+        if (!angles.length && !anglesLoading && !generatingAngles) {
           const anglesResult = await getAngles(userId);
-          if (!anglesResult || anglesResult.length === 0) {
-            // Auto-generate angles if none exist
+
+          // Only auto-generate angles if none exist and we're not already generating
+          if (
+            (!anglesResult || anglesResult.length === 0) &&
+            !generatingAngles
+          ) {
             setGeneratingAngles(true);
             try {
               await generateAngles(userId);
@@ -88,7 +97,19 @@ export default function ContentAnglesPage() {
       };
       loadData();
     }
-  }, [userId, getBrief, getAngles, generateAngles, entryId]);
+  }, [
+    userId,
+    brief,
+    angles.length,
+    getBrief,
+    getAngles,
+    generateAngles,
+    entryId,
+    briefLoading,
+    anglesLoading,
+    generatingAngles,
+    editableBrief,
+  ]);
 
   const handleGenerateAngles = async () => {
     if (!userId) return;
@@ -103,30 +124,41 @@ export default function ContentAnglesPage() {
     }
   };
 
+  const [selectingAngleId, setSelectingAngleId] = useState<number | null>(null);
+
   const handleSelectAngle = async (angleId: number) => {
     if (!userId) return;
 
+    // Set loading state for the specific angle card
+    setSelectingAngleId(angleId);
+
     try {
       await selectAngle(userId, angleId);
+
+      // After selecting the angle, redirect to the canvas page
+      if (entryId) {
+        router.push(`/content/canvas?entryId=${entryId}&angleId=${angleId}`);
+      } else {
+        router.push(`/content/canvas?angleId=${angleId}`);
+      }
     } catch (error) {
       console.error("Failed to select angle:", error);
+      // Clear loading state on error
+      setSelectingAngleId(null);
     }
   };
 
   const handleCreateDraft = async () => {
     if (!userId || !selectedAngle) return;
 
-    try {
-      const draft = await createDraft(userId, selectedAngle.id);
-      if (draft) {
-        if (entryId) {
-          router.push(`/content/canvas?entryId=${entryId}`);
-        } else {
-          router.push("/content/canvas");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to create draft:", error);
+    // Instead of creating a draft here, just navigate to the canvas page
+    // with the selected angle's ID. The canvas page will handle draft creation.
+    if (entryId) {
+      router.push(
+        `/content/canvas?entryId=${entryId}&angleId=${selectedAngle.id}`
+      );
+    } else {
+      router.push(`/content/canvas?angleId=${selectedAngle.id}`);
     }
   };
 
@@ -389,12 +421,13 @@ export default function ContentAnglesPage() {
             ) : (
               <StaggeredChildren>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {angles.map((angle) => (
+                  {angles.slice(0, 10).map((angle) => (
                     <AngleCard
                       key={angle.id}
                       angle={angle}
                       isSelected={selectedAngle?.id === angle.id}
                       onSelect={() => handleSelectAngle(angle.id)}
+                      isLoading={selectingAngleId === angle.id}
                     />
                   ))}
                 </div>

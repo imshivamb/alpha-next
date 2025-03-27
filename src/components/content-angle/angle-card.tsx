@@ -3,18 +3,20 @@
 import { ContentAngle } from "@/lib/types/content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface AngleCardProps {
   angle: ContentAngle;
   isSelected: boolean;
+  isLoading?: boolean;
   onSelect: () => void;
 }
 
 export default function AngleCard({
   angle,
   isSelected,
+  isLoading = false,
   onSelect,
 }: AngleCardProps) {
   return (
@@ -59,8 +61,18 @@ export default function AngleCard({
             onClick={onSelect}
             variant={isSelected ? "default" : "outline"}
             className="w-full"
+            disabled={isLoading}
           >
-            {isSelected ? "Selected" : "Select Angle"}
+            {isLoading ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                Loading...
+              </>
+            ) : isSelected ? (
+              "Selected"
+            ) : (
+              "Select Angle"
+            )}
           </Button>
         </div>
       </div>

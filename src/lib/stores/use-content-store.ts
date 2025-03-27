@@ -40,10 +40,13 @@ interface ContentState {
   
   generateAngles: (userId: number) => Promise<ContentAngle[] | null>
   getAngles: (userId: number) => Promise<ContentAngle[] | null>
+  getAngleById: (userId: number, angleId: number) => Promise<ContentAngle | null>
   selectAngle: (userId: number, angleId: number) => Promise<ContentAngle | null>
   
   createDraft: (userId: number, angleId: number) => Promise<Draft | null>
+  createDraftFromBrief: (userId: number) => Promise<Draft | null>
   enhanceDraft: (userId: number, draftContent: string, options?: DraftEnhanceOptions) => Promise<Draft | null>
+  resetDraft: () => void
   
   getCalendarEntries: (userId: number) => Promise<CalendarEntry[] | null>
   createCalendarEntry: (userId: number, entryData: Partial<CalendarEntry>) => Promise<CalendarEntry | null>
@@ -259,6 +262,47 @@ export const useContentStore = create<ContentState>((set, get) => ({
     }
   },
   
+  getAngleById: async (userId: number, angleId: number) => {
+    try {
+      set({ anglesLoading: true, anglesError: null })
+      
+      // First get all angles if we don't have them already
+      let angles = get().angles
+      if (!angles.length) {
+        angles = await ContentService.getAngles(userId)
+        set({ angles })
+      }
+      
+      // Find the specific angle by ID
+      const angle = angles.find(a => a.id === angleId)
+      
+      if (angle) {
+        // Update selected angle
+        set({ selectedAngle: angle, anglesLoading: false })
+        return angle
+      } else {
+        // If not found, might need to refetch angles
+        const refreshedAngles = await ContentService.getAngles(userId)
+        const refreshedAngle = refreshedAngles.find(a => a.id === angleId)
+        
+        set({ 
+          angles: refreshedAngles,
+          selectedAngle: refreshedAngle || null,
+          anglesLoading: false
+        })
+        
+        return refreshedAngle || null
+      }
+    } catch (error) {
+      console.error('Failed to get angle by ID:', error)
+      set({ 
+        anglesLoading: false, 
+        anglesError: 'Failed to load angle' 
+      })
+      return null
+    }
+  },
+  
   selectAngle: async (userId: number, angleId: number) => {
     try {
       set({ anglesLoading: true, anglesError: null })
@@ -289,10 +333,16 @@ export const useContentStore = create<ContentState>((set, get) => ({
   // Draft methods
   createDraft: async (userId: number, angleId: number) => {
     try {
+      // First check if we already have a draft with a matching angle ID
+      const existingDraft = get().draft
+      if (existingDraft && existingDraft.angle_id === angleId) {
+        return existingDraft
+      }
+
       set({ draftLoading: true, draftError: null })
       const draft = await ContentService.createDraft(userId, angleId)
       set({ 
-        draft: draft,
+        draft,
         draftLoading: false 
       })
       return draft
@@ -301,6 +351,25 @@ export const useContentStore = create<ContentState>((set, get) => ({
       set({ 
         draftLoading: false, 
         draftError: 'Failed to create draft' 
+      })
+      return null
+    }
+  },
+  
+  createDraftFromBrief: async (userId: number) => {
+    try {
+      set({ draftLoading: true, draftError: null })
+      const draft = await ContentService.createDraftFromBrief(userId)
+      set({ 
+        draft,
+        draftLoading: false 
+      })
+      return draft
+    } catch (error) {
+      console.error('Failed to create draft from brief:', error)
+      set({ 
+        draftLoading: false, 
+        draftError: 'Failed to create draft from content brief' 
       })
       return null
     }
@@ -320,6 +389,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
       })
       return null
     }
+  },
+  
+  resetDraft: () => {
+    set({ draft: null })
   },
   
   // Schedule post

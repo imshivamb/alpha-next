@@ -57,6 +57,11 @@ const ContentService = {
     return response.data
   },
   
+  createDraftFromBrief: async (userId: number): Promise<Draft> => {
+    const response = await apiClient.post(`/content/${userId}/draft`)
+    return response.data
+  },
+  
   enhanceDraft: async (userId: number, draftContent: string, options?: DraftEnhanceOptions): Promise<Draft> => {
     const enhanceRequest: EnhanceDraftRequest = {
       draft_content: draftContent,
