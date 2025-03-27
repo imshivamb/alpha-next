@@ -17,11 +17,20 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetDescription,
+  SheetFooter,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import ContentBriefEditor from "@/components/content-brief/content-brief-editor";
 import AngleCard from "@/components/content-angle/angle-card";
-import { RefreshCw, ChevronRight, FileText, Edit, Layout } from "lucide-react";
+import {
+  RefreshCw,
+  ChevronRight,
+  FileText,
+  Edit,
+  Layout,
+  Save,
+  X,
+} from "lucide-react";
 
 export default function ContentAnglesPage() {
   const { userId } = useCurrentUser();
@@ -130,11 +139,8 @@ export default function ContentAnglesPage() {
     if (!userId || !editableBrief) return;
 
     try {
-      const parsedData = editableBrief.parsed_data;
-      await updateBrief(userId, {
-        ...editableBrief,
-        parsed_data: parsedData,
-      });
+      // Just pass the entire editableBrief - it already has parsed_data with the correct structure
+      await updateBrief(userId, editableBrief);
       setIsEditingBrief(false);
     } catch (error) {
       console.error("Failed to update brief:", error);
@@ -152,10 +158,45 @@ export default function ContentAnglesPage() {
   ) => {
     if (!editableBrief) return;
 
-    setEditableBrief({
-      ...editableBrief,
-      [field]: value,
-    });
+    // Handle nested paths in parsed_data (e.g. parsed_data.audience.demographic)
+    if (field.startsWith("parsed_data.")) {
+      const parts = field.split(".");
+
+      if (parts.length === 2) {
+        // Direct property of parsed_data (e.g. parsed_data.title)
+        setEditableBrief({
+          ...editableBrief,
+          parsed_data: {
+            ...editableBrief.parsed_data,
+            [parts[1]]: value,
+          },
+        });
+      } else if (parts.length === 3) {
+        // Nested property (e.g. parsed_data.audience.demographic)
+        const section = parts[1];
+        const property = parts[2];
+
+        setEditableBrief({
+          ...editableBrief,
+          parsed_data: {
+            ...editableBrief.parsed_data,
+            [section]: {
+              ...(editableBrief.parsed_data?.[section] as Record<
+                string,
+                unknown
+              >),
+              [property]: value,
+            },
+          },
+        });
+      }
+    } else {
+      // Direct property of brief
+      setEditableBrief({
+        ...editableBrief,
+        [field]: value,
+      });
+    }
   };
 
   return (
@@ -172,9 +213,15 @@ export default function ContentAnglesPage() {
                     {isEditingBrief ? "Edit" : "View"} Content Brief
                   </Button>
                 </SheetTrigger>
-                <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
-                  <SheetHeader className="mb-4">
-                    <SheetTitle>Content Brief</SheetTitle>
+                <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto p-6">
+                  <SheetHeader className="mb-6 text-left">
+                    <SheetTitle className="text-2xl font-bold">
+                      Content Brief
+                    </SheetTitle>
+                    <SheetDescription>
+                      View and edit your content brief details to help generate
+                      better angles.
+                    </SheetDescription>
                   </SheetHeader>
 
                   {briefLoading ? (
@@ -202,17 +249,29 @@ export default function ContentAnglesPage() {
                     </div>
                   ) : (
                     <div>
-                      <div className="flex justify-end mb-4">
+                      <div className="sticky top-0 z-10 bg-white pt-2 pb-4 mb-6 flex justify-between items-center border-b">
+                        <h3 className="text-lg font-medium">
+                          {isEditingBrief
+                            ? "Edit Brief Details"
+                            : "Brief Details"}
+                        </h3>
                         {isEditingBrief ? (
                           <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={handleCancelEditBrief}
+                              className="flex items-center gap-1.5"
                             >
+                              <X className="h-3.5 w-3.5" />
                               Cancel
                             </Button>
-                            <Button size="sm" onClick={handleSaveBrief}>
+                            <Button
+                              size="sm"
+                              onClick={handleSaveBrief}
+                              className="flex items-center gap-1.5"
+                            >
+                              <Save className="h-3.5 w-3.5" />
                               Save Changes
                             </Button>
                           </div>
@@ -221,9 +280,9 @@ export default function ContentAnglesPage() {
                             variant="outline"
                             size="sm"
                             onClick={handleEditBrief}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-1.5"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5" />
                             Edit Brief
                           </Button>
                         )}
@@ -234,6 +293,28 @@ export default function ContentAnglesPage() {
                         isEditing={isEditingBrief}
                         onChange={handleBriefChange}
                       />
+
+                      {isEditingBrief && (
+                        <SheetFooter className="mt-6 pt-6 border-t">
+                          <div className="flex justify-end gap-2 w-full">
+                            <Button
+                              variant="outline"
+                              onClick={handleCancelEditBrief}
+                              className="flex items-center gap-1.5"
+                            >
+                              <X className="h-4 w-4" />
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleSaveBrief}
+                              className="flex items-center gap-1.5"
+                            >
+                              <Save className="h-4 w-4" />
+                              Save Changes
+                            </Button>
+                          </div>
+                        </SheetFooter>
+                      )}
                     </div>
                   )}
                 </SheetContent>
