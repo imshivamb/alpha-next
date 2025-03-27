@@ -300,18 +300,19 @@ export default function ContentCalendar({
           className="absolute z-10 bg-white border rounded-lg shadow-lg p-4 w-[250px]"
           style={{
             top: selectedEvent.position
-              ? `${selectedEvent.position.top + window.scrollY}px`
+              ? `${selectedEvent.position.top + window.scrollY - 215}px` // Position above the entry (modal height ~215px)
               : "50%",
             left: selectedEvent.position
               ? selectedEvent.position.left +
                   window.scrollX +
                   selectedEvent.position.width / 2 >
                 window.innerWidth / 2
-                ? `${selectedEvent.position.left + window.scrollX - 260}px` // Position to the left if event is on right half
+                ? `${selectedEvent.position.left + window.scrollX - 250}px` // Position to the left if event is on right half
                 : `${
                     selectedEvent.position.left +
                     window.scrollX +
-                    selectedEvent.position.width
+                    selectedEvent.position.width -
+                    0
                   }px` // Position to the right if event is on left half
               : "50%",
             transform: selectedEvent.position
