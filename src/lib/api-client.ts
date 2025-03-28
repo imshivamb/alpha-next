@@ -4,7 +4,7 @@ import axios, {
   InternalAxiosRequestConfig 
 } from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.kiwiq.ai'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 // Track failed auth requests to prevent API spam
 let failedAuthRequests = 0;

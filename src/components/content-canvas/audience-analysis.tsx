@@ -3,13 +3,7 @@
 import { FadeIn, ScaleIn, StaggeredChildren } from "@/components/ui/animations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -46,12 +40,14 @@ import {
   Trophy,
   UserCheck,
   Users,
+  X,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
 
 interface AudienceAnalysisProps {
   draftContent: string;
+  inModal?: boolean;
 }
 
 interface AudienceSet {
@@ -59,7 +55,10 @@ interface AudienceSet {
   audiences: string[];
 }
 
-export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
+export function AudienceAnalysis({
+  draftContent,
+  inModal = false,
+}: AudienceAnalysisProps) {
   const [activeAudienceIndex, setActiveAudienceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResults, setAnalysisResults] =
@@ -133,7 +132,6 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
   const getCurrentAudienceResults = (): AudienceSegment | null => {
     if (!analysisResults) return null;
 
-    // Simply get from the analyses array if available
     if (
       analysisResults.analyses &&
       analysisResults.analyses.length > activeAudienceIndex
@@ -146,7 +144,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
 
   const currentResults = getCurrentAudienceResults();
 
-  // Helper to get score color and description
+  // Helper functions
   const getScoreColor = (score: number) => {
     if (score >= 8) return "text-green-600";
     if (score >= 6) return "text-amber-500";
@@ -163,14 +161,12 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
     return "Poor match";
   };
 
-  // Get progress color for score
   const getProgressColor = (score: number) => {
     if (score >= 8) return "bg-green-500";
     if (score >= 6) return "bg-amber-500";
     return "bg-red-500";
   };
 
-  // Get priority badge color and icon
   const getPriorityBadge = (priority?: string) => {
     if (!priority) return "bg-blue-100 text-blue-700";
 
@@ -186,7 +182,6 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
     }
   };
 
-  // Function to check if an item is a string or an object
   const isString = (
     item: string | AudienceStrength | AudienceWeakness | AudienceSuggestion
   ): item is string => {
@@ -194,36 +189,61 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md border h-[calc(100vh-160px)] flex flex-col overflow-hidden">
-      <div className="px-5 py-4 border-b bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
-        <h2 className="text-xl font-semibold flex items-center">
-          <Target className="h-5 w-5 mr-2" />
-          Audience Analysis
-        </h2>
-        <p className="text-xs text-blue-100 mt-1">
-          Analyze how well your content resonates with your target audience
-        </p>
+    <div
+      className="bg-white rounded-lg shadow-md flex flex-col overflow-hidden"
+      style={{
+        height: inModal ? "calc(90vh - 57px)" : "auto",
+        minHeight: "500px",
+      }}
+    >
+      {/* Header section */}
+      <div className="px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center">
+              <Target className="h-5 w-5 mr-2" />
+              Audience Analysis
+            </h2>
+            <p className="text-sm text-blue-100 mt-1">
+              Evaluate how your content resonates with different audience
+              segments
+            </p>
+          </div>
+
+          {analysisResults && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAnalysisResults(null)}
+              className="text-white hover:bg-blue-700 hover:text-white"
+            >
+              <X className="h-4 w-4 mr-2" />
+              New Analysis
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* Selection or Results section */}
       {!analysisResults ? (
-        <FadeIn className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="mb-6 text-center w-full max-w-md mx-auto">
+        <FadeIn className="flex-1 overflow-auto py-8 px-6">
+          <div className="max-w-md mx-auto">
             <ScaleIn>
-              <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-blue-100">
+              <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-blue-100">
                 <UserCheck className="h-10 w-10 text-blue-500" />
               </div>
             </ScaleIn>
 
-            <h3 className="text-xl font-medium mb-2 text-gray-800">
-              Audience Alignment
+            <h3 className="text-xl font-medium mb-3 text-center text-gray-800">
+              Audience Alignment Analysis
             </h3>
-            <p className="text-gray-600 mb-6">
-              Discover how well your content connects with different audience
-              segments
+            <p className="text-gray-600 mb-6 text-center">
+              Analyze how effectively your content connects with specific
+              audience segments
             </p>
 
             <div className="mb-6 bg-white p-5 rounded-lg border shadow-sm">
-              <label className="text-sm font-medium mb-2 block text-left text-gray-700">
+              <label className="text-sm font-medium mb-2 block text-gray-700">
                 Select audience set:
               </label>
               <Select
@@ -247,12 +267,12 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                   (audience, index) => (
                     <div
                       key={index}
-                      className="flex items-start p-2 bg-gray-50 rounded-md border border-gray-100"
+                      className="flex items-start p-2.5 bg-gray-50 rounded-md border border-gray-200"
                     >
-                      <div className="bg-blue-100 p-1 rounded-full mr-2 mt-0.5">
-                        <Users className="h-3 w-3 text-blue-700" />
+                      <div className="bg-blue-100 p-1 rounded-full mr-2.5 mt-0.5">
+                        <Users className="h-3.5 w-3.5 text-blue-700" />
                       </div>
-                      <span className="text-xs text-gray-700">{audience}</span>
+                      <span className="text-sm text-gray-700">{audience}</span>
                     </div>
                   )
                 )}
@@ -260,8 +280,8 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
             </div>
 
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 flex items-start">
-                <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div className="bg-red-50 text-red-600 p-3.5 rounded-md mb-4 flex items-start">
+                <AlertTriangle className="h-5 w-5 mr-2.5 flex-shrink-0 mt-0.5" />
                 <p className="text-sm">{error}</p>
               </div>
             )}
@@ -269,12 +289,12 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
             <Button
               onClick={handleRunAnalysis}
               disabled={isLoading || !draftContent.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-blue-600 hover:bg-blue-700 h-11"
             >
               {isLoading ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
+                  Analyzing content...
                 </>
               ) : (
                 <>
@@ -286,169 +306,159 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
           </div>
         </FadeIn>
       ) : (
-        <FadeIn className="flex-1 overflow-hidden flex flex-col">
-          {/* Audience selector */}
-          <div className="bg-gray-50 px-4 py-3 border-b flex items-center space-x-3">
-            {audienceSets[selectedAudienceSet].audiences.map(
-              (audience, index) => (
-                <Button
-                  key={index}
-                  variant={
-                    activeAudienceIndex === index ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => setActiveAudienceIndex(index)}
-                  className={
-                    activeAudienceIndex === index
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "text-gray-700 hover:text-blue-600"
-                  }
-                >
-                  {activeAudienceIndex === index && (
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Audience {index + 1}
-                </Button>
-              )
-            )}
-
-            <div className="ml-auto">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setAnalysisResults(null)}
-                className="text-gray-600 hover:text-blue-600"
-              >
-                New Analysis
-              </Button>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Audience tabs */}
+          <div className="bg-gray-50 border-b flex items-center px-4 py-2 sticky top-0 z-10">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+              {audienceSets[selectedAudienceSet].audiences.map(
+                (audience, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveAudienceIndex(index)}
+                    className={`rounded-full px-4 ${
+                      activeAudienceIndex === index
+                        ? "bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {activeAudienceIndex === index && (
+                      <Check className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    Audience {index + 1}
+                  </Button>
+                )
+              )}
             </div>
           </div>
 
           {/* Audience description */}
-          <div className="px-4 py-3 bg-white border-b">
+          <div className="px-5 py-3 bg-white border-b sticky top-[52px] z-10 shadow-sm">
             <div className="flex items-center">
-              <Users className="h-4 w-4 text-blue-600 mr-2" />
-              <h3 className="font-medium text-sm">Target Audience:</h3>
+              <div className="bg-blue-100 p-1.5 rounded-full mr-2.5">
+                <Users className="h-4 w-4 text-blue-700" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-700 font-medium">
+                  {
+                    audienceSets[selectedAudienceSet].audiences[
+                      activeAudienceIndex
+                    ]
+                  }
+                </p>
+              </div>
             </div>
-            <p className="ml-6 mt-1 text-sm text-gray-700">
-              {audienceSets[selectedAudienceSet].audiences[activeAudienceIndex]}
-            </p>
           </div>
 
-          {/* Results */}
-          <div className="overflow-y-auto p-4 flex-1">
-            <StaggeredChildren className="space-y-5">
-              {/* Score */}
+          {/* Results content */}
+          <FadeIn className="overflow-y-auto flex-1 p-5">
+            <StaggeredChildren className="space-y-5 pb-4">
               {currentResults && (
                 <>
-                  {/* Summary if available */}
-                  {currentResults.summary && (
-                    <FadeIn>
-                      <Card className="border-t-4 border-t-gray-500 shadow-sm overflow-hidden">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex items-center text-gray-700">
-                            <Info className="h-4 w-4 mr-2 text-gray-500" />
-                            Summary
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-600">
-                            {currentResults.summary}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </FadeIn>
-                  )}
-
-                  <Card className="border-t-4 border-t-blue-500 shadow-sm overflow-hidden">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center">
-                        <Gauge className="h-4 w-4 mr-2 text-blue-500" />
+                  {/* Score card */}
+                  <Card className="overflow-hidden shadow-sm border-none shadow-blue-100">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                      <CardTitle className="text-base flex items-center text-blue-700">
+                        <Gauge className="h-4 w-4 mr-2 text-blue-600" />
                         Audience Alignment Score
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-2">
-                        <div
-                          className={`text-2xl font-bold ${getScoreColor(
-                            currentResults.score
-                          )}`}
-                        >
-                          {currentResults.score}/10
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`text-3xl font-bold ${getScoreColor(
+                              currentResults.score
+                            )}`}
+                          >
+                            {currentResults.score.toFixed(1)}
+                          </div>
+                          <div className="text-xl text-gray-400 font-light">
+                            /10
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-600 font-medium">
+                        <div
+                          className={`text-sm font-medium px-3 py-1 rounded-full ${
+                            currentResults.score >= 8
+                              ? "bg-green-50 text-green-700"
+                              : currentResults.score >= 6
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-red-50 text-red-700"
+                          }`}
+                        >
                           {getScoreDescription(currentResults.score)}
                         </div>
                       </div>
                       <Progress
                         value={currentResults.score * 10}
-                        className="h-2"
-                        indicatorClassName={getProgressColor(
+                        className="h-2.5 rounded-full"
+                        indicatorClassName={`${getProgressColor(
                           currentResults.score
-                        )}
+                        )} rounded-full`}
                       />
+
+                      {/* Summary if available */}
+                      {currentResults.summary && (
+                        <div className="mt-4 pt-4 border-t text-sm text-gray-600">
+                          {currentResults.summary}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 
                   {/* Key metrics if available */}
                   {currentResults.key_metrics &&
                     Object.keys(currentResults.key_metrics).length > 0 && (
-                      <FadeIn>
-                        <Card className="border-t-4 border-t-indigo-500 shadow-sm">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-base flex items-center text-indigo-600">
-                              <LucideBarChart className="h-4 w-4 mr-2" />
-                              Key Metrics
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="grid grid-cols-2 gap-3 mt-2">
-                              {Object.entries(currentResults.key_metrics).map(
-                                ([key, value], idx) => (
-                                  <div
-                                    key={idx}
-                                    className="bg-indigo-50 p-3 rounded-md border border-indigo-100"
-                                  >
-                                    <div className="flex justify-between items-center mb-1.5">
-                                      <h4 className="text-xs font-medium text-indigo-700">
-                                        {key}
-                                      </h4>
-                                      <span
-                                        className={`text-sm font-bold ${getScoreColor(
-                                          value
-                                        )}`}
-                                      >
-                                        {value}/10
-                                      </span>
-                                    </div>
-                                    <Progress
-                                      value={value * 10}
-                                      className="h-1.5"
-                                      indicatorClassName={getProgressColor(
+                      <Card className="overflow-hidden shadow-sm border-none shadow-indigo-100">
+                        <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50 to-purple-50 border-b">
+                          <CardTitle className="text-base flex items-center text-indigo-700">
+                            <LucideBarChart className="h-4 w-4 mr-2" />
+                            Key Metrics
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            {Object.entries(currentResults.key_metrics).map(
+                              ([key, value], idx) => (
+                                <div
+                                  key={idx}
+                                  className="bg-gray-50 p-3 rounded-lg border border-gray-100"
+                                >
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h4 className="text-xs font-medium text-gray-700">
+                                      {key}
+                                    </h4>
+                                    <span
+                                      className={`text-sm font-bold ${getScoreColor(
                                         value
-                                      )}
-                                    />
+                                      )}`}
+                                    >
+                                      {value}/10
+                                    </span>
                                   </div>
-                                )
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </FadeIn>
+                                  <Progress
+                                    value={value * 10}
+                                    className="h-1.5 bg-gray-200"
+                                    indicatorClassName={getProgressColor(value)}
+                                  />
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     )}
 
-                  {/* Strengths */}
-                  <Card className="border-t-4 border-t-green-500 shadow-sm">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center text-green-600">
+                  {/* Content Strengths */}
+                  <Card className="overflow-hidden shadow-sm border-none shadow-green-100">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+                      <CardTitle className="text-base flex items-center text-green-700">
                         <Trophy className="h-4 w-4 mr-2" />
                         Content Strengths
                       </CardTitle>
-                      <CardDescription>
-                        What connects well with this audience
-                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-4">
                       <ul className="space-y-3">
                         {currentResults.strengths.map((strength, i) => {
                           const isStringValue = isString(strength);
@@ -459,7 +469,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                           return (
                             <li
                               key={i}
-                              className="group bg-green-50 p-3 rounded-md border border-green-100 hover:border-green-300 hover:bg-green-100 transition-all"
+                              className="group bg-white p-3.5 rounded-lg border border-green-100 hover:border-green-300 transition-all"
                             >
                               <div className="flex">
                                 <CheckCircle2 className="h-5 w-5 mr-3 text-green-500 mt-0.5 flex-shrink-0" />
@@ -469,7 +479,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                                   </span>
 
                                   {!isStringValue && strength.explanation && (
-                                    <p className="text-xs text-gray-600 mt-1">
+                                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
                                       {strength.explanation}
                                     </p>
                                   )}
@@ -520,18 +530,15 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                     </CardContent>
                   </Card>
 
-                  {/* Weaknesses */}
-                  <Card className="border-t-4 border-t-amber-500 shadow-sm">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center text-amber-600">
+                  {/* Areas to Improve */}
+                  <Card className="overflow-hidden shadow-sm border-none shadow-amber-100">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 to-yellow-50 border-b">
+                      <CardTitle className="text-base flex items-center text-amber-700">
                         <AlertTriangle className="h-4 w-4 mr-2" />
                         Areas to Improve
                       </CardTitle>
-                      <CardDescription>
-                        What could be better for this audience
-                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-4">
                       <ul className="space-y-3">
                         {currentResults.weaknesses.map((weakness, i) => {
                           const isStringValue = isString(weakness);
@@ -542,7 +549,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                           return (
                             <li
                               key={i}
-                              className="group bg-amber-50 p-3 rounded-md border border-amber-100 hover:border-amber-300 hover:bg-amber-100 transition-all"
+                              className="group bg-white p-3.5 rounded-lg border border-amber-100 hover:border-amber-300 transition-all"
                             >
                               <div className="flex">
                                 <AlertTriangle className="h-5 w-5 mr-3 text-amber-500 mt-0.5 flex-shrink-0" />
@@ -552,7 +559,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                                   </span>
 
                                   {!isStringValue && weakness.explanation && (
-                                    <p className="text-xs text-gray-600 mt-1">
+                                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
                                       {weakness.explanation}
                                     </p>
                                   )}
@@ -588,18 +595,15 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                     </CardContent>
                   </Card>
 
-                  {/* Suggestions */}
-                  <Card className="border-t-4 border-t-blue-500 shadow-sm">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center text-blue-600">
+                  {/* Actionable Suggestions */}
+                  <Card className="overflow-hidden shadow-sm border-none shadow-blue-100">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-cyan-50 border-b">
+                      <CardTitle className="text-base flex items-center text-blue-700">
                         <Zap className="h-4 w-4 mr-2" />
                         Actionable Suggestions
                       </CardTitle>
-                      <CardDescription>
-                        Specific improvements for better audience engagement
-                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-4">
                       <ul className="space-y-3">
                         {currentResults.suggestions.map((suggestion, i) => {
                           const isStringValue = isString(suggestion);
@@ -610,7 +614,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                           return (
                             <li
                               key={i}
-                              className="group bg-blue-50 p-3 rounded-md border border-blue-100 hover:border-blue-300 hover:bg-blue-100 transition-all"
+                              className="group bg-white p-3.5 rounded-lg border border-blue-100 hover:border-blue-300 transition-all"
                             >
                               <div className="flex">
                                 <div className="h-5 w-5 mr-3 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 group-hover:bg-blue-200 transition-colors">
@@ -623,7 +627,7 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                                   </span>
 
                                   {!isStringValue && suggestion.explanation && (
-                                    <p className="text-xs text-gray-600 mt-1">
+                                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
                                       {suggestion.explanation}
                                     </p>
                                   )}
@@ -667,8 +671,8 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
                                   </div>
 
                                   {!isStringValue && suggestion.example && (
-                                    <div className="mt-2 text-xs bg-white p-2 rounded border border-blue-100">
-                                      <span className="font-medium">
+                                    <div className="mt-3 text-sm bg-gray-50 p-3 rounded-md border border-gray-100">
+                                      <span className="font-medium text-gray-700">
                                         Example:
                                       </span>{" "}
                                       {suggestion.example}
@@ -685,27 +689,25 @@ export function AudienceAnalysis({ draftContent }: AudienceAnalysisProps) {
 
                   {/* Engagement prediction if available */}
                   {currentResults.engagement_prediction && (
-                    <FadeIn>
-                      <Card className="border-t-4 border-t-purple-500 shadow-sm">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex items-center text-purple-600">
-                            <Target className="h-4 w-4 mr-2" />
-                            Engagement Prediction
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-600 bg-purple-50 p-3 rounded-md border border-purple-100">
-                            {currentResults.engagement_prediction}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </FadeIn>
+                    <Card className="overflow-hidden shadow-sm border-none shadow-purple-100">
+                      <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+                        <CardTitle className="text-base flex items-center text-purple-700">
+                          <Target className="h-4 w-4 mr-2" />
+                          Engagement Prediction
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <p className="text-sm text-gray-700 bg-white p-3.5 rounded-lg border border-purple-100 leading-relaxed">
+                          {currentResults.engagement_prediction}
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
                 </>
               )}
             </StaggeredChildren>
-          </div>
-        </FadeIn>
+          </FadeIn>
+        </div>
       )}
     </div>
   );

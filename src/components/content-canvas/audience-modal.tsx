@@ -2,14 +2,7 @@
 
 import { FadeIn } from "@/components/ui/animations";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Users } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { AudienceAnalysis } from "./audience-analysis";
 
 interface AudienceModalProps {
@@ -25,22 +18,13 @@ export function AudienceModal({
 }: AudienceModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="border-b pb-3">
-          <DialogTitle className="text-xl font-semibold text-blue-700 flex items-center">
-            <Users className="h-5 w-5 mr-2 text-blue-500" />
-            Audience Analysis
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[950px] p-0 max-h-[90vh] overflow-hidden rounded-lg">
+        <FadeIn className="h-full">
+          <AudienceAnalysis draftContent={draftContent} inModal={true} />
+        </FadeIn>
 
-        <div className="flex-1 overflow-y-auto py-4">
-          <FadeIn>
-            <AudienceAnalysis draftContent={draftContent} />
-          </FadeIn>
-        </div>
-
-        <DialogFooter className="border-t pt-3">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="px-6 py-3 border-t bg-gray-50">
+          <Button variant="outline" onClick={onClose} className="ml-auto">
             Close
           </Button>
         </DialogFooter>
