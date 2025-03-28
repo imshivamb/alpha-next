@@ -1,35 +1,55 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { useContentStore } from "@/lib/stores/use-content-store";
-import { useAIStore } from "@/lib/stores/use-ai-store";
-import useCurrentUser from "@/lib/hooks/use-current-user";
-import { PageTransition, FadeIn } from "@/components/ui/animations";
+import ContentBriefEditor from "@/components/content-brief/content-brief-editor";
+import {
+  AudienceModal,
+  CopywriterAgent,
+  PreviewModal,
+  SmartSuggestionsManager,
+} from "@/components/content-canvas";
+import { FadeIn, PageTransition } from "@/components/ui/animations";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  SheetDescription,
 } from "@/components/ui/sheet";
-import ContentBriefEditor from "@/components/content-brief/content-brief-editor";
+import useCurrentUser from "@/lib/hooks/use-current-user";
+import ContentService from "@/lib/services/content-service";
+import { useAIStore } from "@/lib/stores/use-ai-store";
+import { useContentStore } from "@/lib/stores/use-content-store";
 import {
-  FileText,
+  Calendar,
   Eye,
-  RefreshCw,
-  Save,
+  FileText,
   PlusCircle,
+  RefreshCw,
   Users,
 } from "lucide-react";
-import {
-  PreviewModal,
-  CopywriterAgent,
-  SmartSuggestionsManager,
-  AudienceModal,
-} from "@/components/content-canvas";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export default function ContentCanvasPage() {
   const { userId } = useCurrentUser();
@@ -40,14 +60,20 @@ export default function ContentCanvasPage() {
   // Added to track whether we've already loaded the draft
   const hasInitializedDraft = useRef(false);
 
-  // States
   const [briefSheetOpen, setBriefSheetOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [audienceModalOpen, setAudienceModalOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [draftContent, setDraftContent] = useState("");
   const [finalAnalysis, setFinalAnalysis] = useState<string | null>(null);
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [characterCount, setCharacterCount] = useState(0);
+  const [schedulePlatform, setSchedulePlatform] = useState("LinkedIn");
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   // Store state
   const {
@@ -59,8 +85,6 @@ export default function ContentCanvasPage() {
     draft,
     createDraft,
     createDraftFromBrief,
-    enhanceDraft,
-    draftLoading,
     resetDraft,
   } = useContentStore();
 
@@ -71,8 +95,23 @@ export default function ContentCanvasPage() {
     resetDraft();
   }, [resetDraft]);
 
+  // Set today's date and time for schedule dialog
+  useEffect(() => {
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
+    setScheduleDate(dateStr);
+    setScheduleTime(timeStr);
+  }, []);
+
+  // Update character count whenever draft content changes
+  useEffect(() => {
+    setCharacterCount(draftContent.length);
+  }, [draftContent]);
+
   // Second effect - Load draft and angle when the component mounts
-  // This is the main logic that needs to be fixed to prevent multiple API calls
   useEffect(() => {
     if (!userId) return;
 
@@ -170,13 +209,50 @@ export default function ContentCanvasPage() {
     setDraftError(null);
   };
 
-  const handleSaveDraft = async () => {
-    if (!userId || !draft) return;
+  // const handleSaveDraft = async () => {
+  //   if (!userId || !draft) return;
+
+  //   try {
+  //     await enhanceDraft(userId, draftContent);
+  //   } catch (error) {
+  //     console.error("Failed to save draft:", error);
+  //   }
+  // };
+
+  const handleSchedulePost = async () => {
+    if (!userId || !draft || !draftContent.trim()) return;
+
+    setIsScheduling(true);
+    setScheduleError(null);
 
     try {
-      await enhanceDraft(userId, draftContent);
+      const postData = {
+        draft_id: draft.id,
+        scheduled_date: scheduleDate,
+        scheduled_time: scheduleTime,
+        content: draftContent,
+        platform: schedulePlatform,
+      };
+
+      const response = await ContentService.schedulePost(userId, postData);
+
+      if (response) {
+        setScheduleDialogOpen(false);
+        // Add success toast
+        toast.success("Post scheduled successfully", {
+          description: `Your post will be published on ${schedulePlatform} on ${scheduleDate} at ${scheduleTime}`,
+        });
+      }
     } catch (error) {
-      console.error("Failed to save draft:", error);
+      console.error("Failed to schedule post:", error);
+      setScheduleError("Failed to schedule post. Please try again.");
+      // Add error toast
+      toast.error("Failed to schedule post", {
+        description:
+          "There was an error scheduling your post. Please try again.",
+      });
+    } finally {
+      setIsScheduling(false);
     }
   };
 
@@ -269,7 +345,18 @@ ${formatSuggestions}
       <div className="container mx-auto max-w-7xl py-6">
         <FadeIn>
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Content Canvas</h1>
+            <div>
+              <h1 className="text-3xl font-bold">Content Canvas</h1>
+              {draft && (
+                <div className="flex items-center mt-1 text-sm text-gray-500 space-x-2">
+                  <Badge variant="outline" className="text-xs">
+                    Version {draft.version}
+                  </Badge>
+                  <span>|</span>
+                  <span>{characterCount} characters</span>
+                </div>
+              )}
+            </div>
             <div className="flex gap-3">
               <Sheet open={briefSheetOpen} onOpenChange={setBriefSheetOpen}>
                 <SheetTrigger asChild>
@@ -332,18 +419,9 @@ ${formatSuggestions}
               </Button>
 
               <Button
-                variant="outline"
-                onClick={handleSaveDraft}
-                className="flex items-center gap-2"
-                disabled={draftLoading}
-              >
-                <Save className="h-4 w-4" />
-                Save Draft
-              </Button>
-
-              <Button
                 onClick={handleGenerateFinalAnalysis}
                 className="flex items-center gap-2"
+                disabled={!draftContent.trim()}
               >
                 <Eye className="h-4 w-4" />
                 Preview
@@ -357,6 +435,7 @@ ${formatSuggestions}
               <CopywriterAgent
                 draftContent={draftContent}
                 onUpdateDraft={handleUpdateDraft}
+                draft={draft}
               />
             </div>
 
@@ -369,36 +448,125 @@ ${formatSuggestions}
                     Draft Editor
                   </h2>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveDraft}
-                      disabled={!draftContent || draftLoading}
-                      className="flex items-center gap-1.5"
+                  <div className="flex items-center gap-3">
+                    {/* Schedule button */}
+                    <Dialog
+                      open={scheduleDialogOpen}
+                      onOpenChange={setScheduleDialogOpen}
                     >
-                      {draftLoading ? (
-                        <>
-                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-3.5 w-3.5" />
-                          Save
-                        </>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="flex items-center gap-2 h-9"
+                          disabled={!draftContent.trim()}
+                        >
+                          <Calendar className="h-4 w-4" />
+                          Schedule
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Schedule Post</DialogTitle>
+                          <DialogDescription>
+                            Set a date and time to publish this content.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <label htmlFor="platform" className="text-right">
+                              Platform
+                            </label>
+                            <Select
+                              value={schedulePlatform}
+                              onValueChange={setSchedulePlatform}
+                            >
+                              <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select platform" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="LinkedIn">
+                                  LinkedIn
+                                </SelectItem>
+                                <SelectItem value="Twitter">Twitter</SelectItem>
+                                <SelectItem value="Facebook">
+                                  Facebook
+                                </SelectItem>
+                                <SelectItem value="Instagram">
+                                  Instagram
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <label htmlFor="date" className="text-right">
+                              Date
+                            </label>
+                            <Input
+                              id="date"
+                              type="date"
+                              value={scheduleDate}
+                              onChange={(e) => setScheduleDate(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <label htmlFor="time" className="text-right">
+                              Time
+                            </label>
+                            <Input
+                              id="time"
+                              type="time"
+                              value={scheduleTime}
+                              onChange={(e) => setScheduleTime(e.target.value)}
+                              className="col-span-3"
+                            />
+                          </div>
+
+                          {scheduleError && (
+                            <div className="bg-red-50 p-3 text-red-600 text-sm rounded-md">
+                              {scheduleError}
+                            </div>
+                          )}
+                        </div>
+
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setScheduleDialogOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleSchedulePost}
+                            disabled={
+                              isScheduling || !scheduleDate || !scheduleTime
+                            }
+                          >
+                            {isScheduling ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Scheduling...
+                              </>
+                            ) : (
+                              "Schedule Post"
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Draft stats */}
+                    <div className="text-sm text-gray-500">
+                      {draft && (
+                        <div className="flex items-center space-x-3">
+                          <Badge variant="outline" className="text-xs">
+                            Version {draft.version}
+                          </Badge>
+                          <span>{characterCount} characters</span>
+                        </div>
                       )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPreviewOpen(true)}
-                      disabled={!draftContent}
-                      className="flex items-center gap-1.5"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Preview
-                    </Button>
+                    </div>
                   </div>
                 </div>
 

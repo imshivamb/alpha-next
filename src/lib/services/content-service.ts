@@ -122,10 +122,22 @@ const ContentService = {
     draft_id: number,
     scheduled_date: string,
     scheduled_time: string,
-    platform?: string 
+    platform?: string,
+    content: string  // Add content parameter
   }): Promise<ScheduledPost> => {
-    const response = await apiClient.post(`/content/${userId}/schedule`, postData)
-    return response.data
+    // Combine date and time into a single datetime
+    const scheduledDateTime = new Date(`${postData.scheduled_date}T${postData.scheduled_time}`);
+    
+    // Create the payload with the required fields
+    const payload = {
+      scheduled_date: scheduledDateTime.toISOString(),
+      content: postData.content,  // Pass the content
+      platform: postData.platform || 'LinkedIn',
+      draft_id: postData.draft_id
+    };
+    
+    const response = await apiClient.post(`/content/${userId}/schedule`, payload);
+    return response.data;
   }
 }
 

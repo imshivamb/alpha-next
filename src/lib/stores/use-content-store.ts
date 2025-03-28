@@ -53,7 +53,14 @@ interface ContentState {
   updateCalendarEntry: (userId: number, entryId: number, entryData: Partial<CalendarEntry>) => Promise<CalendarEntry | null>
   deleteCalendarEntry: (userId: number, entryId: number) => Promise<boolean>
   
-  schedulePost: (userId: number, draftId: number, scheduledDate: string, scheduledTime: string, platform?: string) => Promise<ScheduledPost | null>
+  schedulePost: (
+    userId: number, 
+    draftId: number, 
+    scheduledDate: string, 
+    scheduledTime: string,
+    content: string,
+    platform?: string
+  ) => Promise<ScheduledPost | null>
   
   clearErrors: () => void
   resetState: () => void
@@ -441,26 +448,35 @@ export const useContentStore = create<ContentState>((set, get) => ({
     set({ draft: null })
   },
   
-  // Schedule post
-  schedulePost: async (userId: number, draftId: number, scheduledDate: string, scheduledTime: string, platform?: string) => {
+  schedulePost: async (
+    userId: number,
+    draftId: number,
+    scheduledDate: string,
+    scheduledTime: string,
+    content: string,
+    platform?: string
+  ) => {
     try {
-      set({ draftLoading: true, draftError: null })
+      set({ draftLoading: true, draftError: null });
+      
       const postData = {
         draft_id: draftId,
         scheduled_date: scheduledDate,
         scheduled_time: scheduledTime,
-        platform: platform || 'linkedin'
-      }
-      const scheduledPost = await ContentService.schedulePost(userId, postData)
-      set({ draftLoading: false })
-      return scheduledPost
+        content: content,
+        platform: platform || 'LinkedIn'
+      };
+      
+      const scheduledPost = await ContentService.schedulePost(userId, postData);
+      set({ draftLoading: false });
+      return scheduledPost;
     } catch (error) {
-      console.error('Failed to schedule post:', error)
+      console.error('Failed to schedule post:', error);
       set({ 
         draftLoading: false, 
         draftError: 'Failed to schedule post' 
-      })
-      return null
+      });
+      return null;
     }
   },
   
@@ -494,4 +510,4 @@ export const useContentStore = create<ContentState>((set, get) => ({
       error: null
     })
   }
-})) 
+}))

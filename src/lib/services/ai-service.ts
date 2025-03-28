@@ -54,15 +54,31 @@ const AIService = {
     draftContent: string,
     options: Record<string, unknown> = {}
   ): Promise<EnhanceDraftResponse> => {
+    // Prepare the request with improved options handling
+    const mode = options.mode || 'improve';
     const request: AIProcessRequest = {
       operation_type: 'enhance_draft',
       context_data: {
         draft_content: draftContent,
+        mode: mode,
         ...options
       }
     }
-    const response = await apiClient.post('/ai/process', request)
-    return response.data
+    
+    try {
+      const response = await apiClient.post('/ai/process', request)
+      return response.data.response_data || {
+        content: draftContent,
+        feedback: "Content enhancement completed."
+      }
+    } catch (error) {
+      console.error('Error enhancing draft:', error)
+      // Return the original content if there's an error
+      return {
+        content: draftContent,
+        feedback: "There was an error during enhancement. The original content is preserved."
+      }
+    }
   },
   
   audienceAnalysis: async (

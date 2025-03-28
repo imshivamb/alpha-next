@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/tooltip";
 import { useAIStore } from "@/lib/stores/use-ai-store";
 import { CopywriterSuggestion } from "@/lib/types/ai";
+import { Draft } from "@/lib/types/content";
 import { cn } from "@/lib/utils";
 import {
   ArrowUpRight,
   Bot,
   ClipboardCheck,
+  FileText,
   RefreshCw,
   Send,
   Sparkles,
@@ -29,6 +31,7 @@ import { useEffect, useRef, useState } from "react";
 interface CopywriterAgentProps {
   draftContent: string;
   onUpdateDraft: (newContent: string) => void;
+  draft?: Draft | null;
 }
 
 interface ChatMessage {
@@ -43,10 +46,12 @@ interface ChatMessage {
 export function CopywriterAgent({
   draftContent,
   onUpdateDraft,
+  draft,
 }: CopywriterAgentProps) {
   const [copywriterMessage, setCopywriterMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [characterCount, setCharacterCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -79,6 +84,11 @@ export function CopywriterAgent({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Update character count when the draft content changes
+  useEffect(() => {
+    setCharacterCount(draftContent.length);
+  }, [draftContent]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -237,10 +247,31 @@ export function CopywriterAgent({
     <div className="bg-white rounded-lg shadow-md border flex flex-col h-[calc(100vh-160px)] overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-        <h2 className="text-xl font-semibold flex items-center">
-          <Bot className="h-5 w-5 mr-2" />
-          Copywriter Assistant
-        </h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold flex items-center">
+            <Bot className="h-5 w-5 mr-2" />
+            Copywriter Assistant
+          </h2>
+
+          {/* Add character count and version badge if draft is available */}
+          {draft && (
+            <div className="flex items-center space-x-2">
+              <Badge
+                variant="outline"
+                className="bg-white/20 text-white text-xs border-white/30"
+              >
+                Version {draft.version}
+              </Badge>
+              <Badge
+                variant="outline"
+                className="bg-white/20 text-white text-xs border-white/30"
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {characterCount}
+              </Badge>
+            </div>
+          )}
+        </div>
         <p className="text-xs text-purple-100 mt-1">
           Get help with refining and improving your content
         </p>
@@ -282,6 +313,16 @@ export function CopywriterAgent({
                 ))}
               </div>
             </FadeIn>
+            {draft && (
+              <FadeIn className="mt-8 text-center">
+                <div className="text-sm text-gray-600">
+                  <p>Working with draft version {draft.version}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Character count: {characterCount}
+                  </p>
+                </div>
+              </FadeIn>
+            )}
           </StaggeredChildren>
         ) : (
           <div className="space-y-6">

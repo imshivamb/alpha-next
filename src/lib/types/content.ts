@@ -72,7 +72,7 @@ export interface ScheduledPost {
   draft_id: number
   scheduled_date: string
   scheduled_time: string
-  platform: string
+  platform?: string
   status: string
   created_at: string
   updated_at: string
@@ -84,10 +84,12 @@ export interface ContentError {
 }
 
 export interface DraftEnhanceOptions {
-  tone?: string
-  length?: string
-  improve_hook?: boolean
-  suggested_changes?: string[]
+  tone?: string;
+  length?: string;
+  improve_hook?: boolean;
+  suggested_changes?: string[];
+  mode?: 'improve' | 'tone' | 'length'; 
+  improve_general?: boolean;
 }
 
 export interface EnhanceDraftRequest {
