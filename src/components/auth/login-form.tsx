@@ -17,10 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/animations";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const { login, isLoading, error } = useAuthStore();
   const router = useRouter();
@@ -37,8 +39,17 @@ function LoginForm() {
     try {
       const user = await login({ username, password });
       if (user) {
-        // Successful login, redirect to dashboard
-        router.push("/dashboard");
+        // Check if admin login is selected and the user has admin rights
+        if (isAdmin) {
+          if (user.is_admin) {
+            router.push("/admin");
+          } else {
+            setFormError("You don't have admin access");
+          }
+        } else {
+          // Regular login, redirect to dashboard
+          router.push("/dashboard");
+        }
       } else if (error) {
         // Error from auth store
         setFormError(error);
@@ -119,6 +130,23 @@ function LoginForm() {
               />
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="admin"
+                checked={isAdmin}
+                onCheckedChange={(checked: boolean | "indeterminate") =>
+                  setIsAdmin(checked === true)
+                }
+                disabled={isLoading}
+              />
+              <Label
+                htmlFor="admin"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Log in as administrator
+              </Label>
+            </div>
+
             {displayError && (
               <FadeIn>
                 <p className="text-sm font-medium text-destructive">
@@ -127,7 +155,7 @@ function LoginForm() {
               </FadeIn>
             )}
           </CardContent>
-          <CardFooter className="flex-col space-y-4">
+          <CardFooter className="flex-col mt-4 space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center gap-2">

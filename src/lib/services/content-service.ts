@@ -1,13 +1,11 @@
-import apiClient from '../api-client'
 import {
+  Draft,
   ContentBrief,
   ContentAngle,
-  Draft,
   CalendarEntry,
-  ScheduledPost,
-  DraftEnhanceOptions,
-  EnhanceDraftRequest
+  ScheduledPost
 } from '../types/content'
+import apiClient from '../api-client'
 
 const ContentService = {
   // Content Brief APIs
@@ -62,13 +60,37 @@ const ContentService = {
     return response.data
   },
   
-  enhanceDraft: async (userId: number, draftContent: string, options?: DraftEnhanceOptions): Promise<Draft> => {
-    const enhanceRequest: EnhanceDraftRequest = {
-      draft_content: draftContent,
-      ...(options || {})
+  enhanceDraft: async (
+    contentId: number,
+    draft: string,
+    options: Record<string, unknown>
+  ) => {
+    try {
+      const response = await apiClient.post(`/content/${contentId}/enhance`, {
+        draft,
+        options
+      });
+
+      // Ensure the response has the expected structure
+      if (!response.data || !response.data.content) {
+        throw new Error('Invalid response format from enhance API');
+      }
+      
+      return {
+        content: response.data.content,
+        feedback: response.data.feedback || 'Content has been enhanced successfully.'
+      };
+    } catch (error: unknown) {
+      // Log detailed error info if available
+      const typedError = error as { response?: { data?: unknown } };
+      console.error('Error enhancing draft:', typedError.response?.data || error);
+      
+      // Return the original content in case of error
+      return {
+        content: draft,
+        feedback: 'There was an error enhancing your content. The original draft has been preserved.'
+      };
     }
-    const response = await apiClient.post(`/content/${userId}/enhance`, enhanceRequest)
-    return response.data
   },
   
   // Calendar APIs

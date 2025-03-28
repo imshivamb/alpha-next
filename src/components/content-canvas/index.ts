@@ -1,3 +1,5 @@
 export { default as PreviewModal } from './preview-modal'
 export { default as CopywriterAgent } from './copywriter-agent'
-export { default as SmartSuggestionsManager } from './smart-suggestions-manager' 
+export { default as SmartSuggestionsManager } from './smart-suggestions-manager'
+export { default as AudienceAnalysis } from './audience-analysis'
+export { default as AudienceModal } from './audience-modal' 

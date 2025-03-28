@@ -201,7 +201,7 @@ export default function CalendarPage() {
 
   return (
     <motion.div
-      className="container py-8 space-y-6"
+      className="container mx-auto max-w-7xl py-8 space-y-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

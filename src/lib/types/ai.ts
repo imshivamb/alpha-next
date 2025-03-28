@@ -97,18 +97,89 @@ export interface AIUsage {
   reset_at: string
 }
 
+export interface AudienceStrength {
+  point: string;
+  explanation?: string;
+  impact_score?: number;
+  evidence?: string;
+}
+
+export interface AudienceWeakness {
+  point: string;
+  explanation?: string;
+  severity_score?: number;
+  impact?: string;
+}
+
+export interface AudienceSuggestion {
+  suggestion: string;
+  explanation?: string;
+  priority?: string;
+  expected_impact?: string;
+  example?: string;
+}
+
+export interface AudienceSegment {
+  segment: string;
+  score: number;
+  summary?: string;
+  strengths: Array<string | AudienceStrength>;
+  weaknesses: Array<string | AudienceWeakness>;
+  suggestions: Array<string | AudienceSuggestion>;
+  key_metrics?: Record<string, number>;
+  engagement_prediction?: string;
+}
+
 export interface AudienceAnalysisResult {
-  audience: string
-  score: number
-  feedback: string
-  suggestions: string[]
+  analyses: AudienceSegment[];
+}
+
+export interface AudienceAnalysisResponse {
+  analyses: AudienceSegment[];
+}
+
+export interface ContentStrength {
+  point: string;
+  category?: string;
+  explanation?: string;
+  impact?: string;
+  example?: string;
+}
+
+export interface ContentWeakness {
+  point: string;
+  category?: string;
+  explanation?: string;
+  impact?: string;
+  example?: string;
+}
+
+export interface ContentSuggestion {
+  suggestion: string;
+  category?: string;
+  implementation?: string;
+  expected_outcome?: string;
+  priority_level?: string;
+  example?: string;
+}
+
+export interface MetricScore {
+  category: string;
+  score: number;
+  assessment?: string;
 }
 
 export interface FinalAnalysisResult {
-  overall_score: number
-  strengths: string[]
-  weaknesses: string[]
-  suggestions: string[]
+  overall_score: number;
+  summary?: string;
+  strengths: Array<string | ContentStrength>;
+  weaknesses: Array<string | ContentWeakness>;
+  suggestions: Array<string | ContentSuggestion>;
+  metric_scores?: MetricScore[];
+  target_audience_fit?: Record<string, unknown>;
+  engagement_prediction?: string;
+  content_grade?: string;
+  comparison?: Record<string, unknown>;
 }
 
 export interface CopywriterSuggestion {
@@ -119,8 +190,18 @@ export interface CopywriterSuggestion {
 }
 
 export interface SmartSuggestion {
-  suggestion: string
-  reason: string
+  original: string
+  alternative: string
+  explanation: string
+  improvement_type?: string
+  word_count_change?: number
+  tone_shift?: string
+  key_enhancements?: string[]
+  target_impact?: string
+}
+
+export interface SmartSuggestionsResponse {
+  suggestions: SmartSuggestion[]
 }
 
 export interface AIResponse {

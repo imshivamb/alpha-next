@@ -16,11 +16,19 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import ContentBriefEditor from "@/components/content-brief/content-brief-editor";
-import { FileText, Eye, RefreshCw, Save, PlusCircle } from "lucide-react";
+import {
+  FileText,
+  Eye,
+  RefreshCw,
+  Save,
+  PlusCircle,
+  Users,
+} from "lucide-react";
 import {
   PreviewModal,
   CopywriterAgent,
   SmartSuggestionsManager,
+  AudienceModal,
 } from "@/components/content-canvas";
 
 export default function ContentCanvasPage() {
@@ -35,6 +43,7 @@ export default function ContentCanvasPage() {
   // States
   const [briefSheetOpen, setBriefSheetOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [audienceModalOpen, setAudienceModalOpen] = useState(false);
   const [draftContent, setDraftContent] = useState("");
   const [finalAnalysis, setFinalAnalysis] = useState<string | null>(null);
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
@@ -175,24 +184,77 @@ export default function ContentCanvasPage() {
     if (!draftContent.trim()) return;
 
     try {
-      const briefData = brief?.parsed_data || {};
+      // Format the brief data properly for the API
+      const briefData = {
+        title:
+          selectedAngle?.angle_description || brief?.title || "Content Draft",
+        description: selectedAngle?.hook || "Content description",
+        audience: "Professional audience", // Default audience
+        goals: ["Inform", "Engage"], // Default goals
+      };
+
+      // Try to extract additional data from brief.parsed_data if available
+      if (brief?.parsed_data) {
+        const parsedData = brief.parsed_data as {
+          audience?: string | { primary?: string };
+          goals?: string[] | Record<string, string>;
+        };
+        if (parsedData.audience) {
+          briefData.audience =
+            typeof parsedData.audience === "string"
+              ? parsedData.audience
+              : parsedData.audience.primary || "Professional audience";
+        }
+        if (parsedData.goals) {
+          briefData.goals = Array.isArray(parsedData.goals)
+            ? parsedData.goals
+            : Object.values(parsedData.goals).filter(Boolean);
+        }
+      }
+
       const analysis = await getFinalAnalysis(draftContent, briefData);
 
       if (analysis) {
-        // Format the analysis for display
+        // Format the analysis for display, handling both string and object types in arrays
+        const formatStrengths = analysis.strengths
+          .map((s) => {
+            return typeof s === "string"
+              ? `- ${s}`
+              : `- ${s.point}${s.explanation ? ` - ${s.explanation}` : ""}`;
+          })
+          .join("\n");
+
+        const formatWeaknesses = analysis.weaknesses
+          .map((w) => {
+            return typeof w === "string"
+              ? `- ${w}`
+              : `- ${w.point}${w.explanation ? ` - ${w.explanation}` : ""}`;
+          })
+          .join("\n");
+
+        const formatSuggestions = analysis.suggestions
+          .map((s) => {
+            return typeof s === "string"
+              ? `- ${s}`
+              : `- ${s.suggestion}${
+                  s.implementation ? ` - ${s.implementation}` : ""
+                }`;
+          })
+          .join("\n");
+
         const formattedAnalysis = `
 ## Content Analysis
 
 ### Overall Score: ${analysis.overall_score}/10
 
 ### Strengths:
-${analysis.strengths.map((s: string) => `- ${s}`).join("\n")}
+${formatStrengths}
 
 ### Areas for Improvement:
-${analysis.weaknesses.map((w: string) => `- ${w}`).join("\n")}
+${formatWeaknesses}
 
 ### Suggestions:
-${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
+${formatSuggestions}
 `;
         setFinalAnalysis(formattedAnalysis);
         setPreviewOpen(true);
@@ -204,7 +266,7 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
 
   return (
     <PageTransition>
-      <div className="container max-w-7xl py-6">
+      <div className="container mx-auto max-w-7xl py-6">
         <FadeIn>
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold">Content Canvas</h1>
@@ -261,6 +323,16 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
 
               <Button
                 variant="outline"
+                onClick={() => setAudienceModalOpen(true)}
+                className="flex items-center gap-2"
+                disabled={!draftContent.trim()}
+              >
+                <Users className="h-4 w-4" />
+                Audience Analysis
+              </Button>
+
+              <Button
+                variant="outline"
                 onClick={handleSaveDraft}
                 className="flex items-center gap-2"
                 disabled={draftLoading}
@@ -279,7 +351,7 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Left column - Copywriter Agent */}
             <div className="lg:col-span-2">
               <CopywriterAgent
@@ -289,10 +361,13 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
             </div>
 
             {/* Middle column - Draft Editor */}
-            <div className="lg:col-span-5">
-              <div className="bg-white rounded-lg shadow-sm border p-4 h-[calc(100vh-160px)] flex flex-col">
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-lg shadow-md border p-4 h-[calc(100vh-160px)] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-medium">Draft Editor</h2>
+                  <h2 className="text-xl font-medium flex items-center">
+                    <FileText className="h-5 w-5 mr-2 text-gray-500" />
+                    Draft Editor
+                  </h2>
 
                   <div className="flex items-center gap-2">
                     <Button
@@ -349,7 +424,7 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
                   )}
 
                   {/* Smart Suggestions Panel */}
-                  {textAreaRef.current && (
+                  {!isLoadingDraft && !draftError && (
                     <SmartSuggestionsManager
                       draftContent={draftContent}
                       textareaRef={textAreaRef}
@@ -368,6 +443,13 @@ ${analysis.suggestions.map((s: string) => `- ${s}`).join("\n")}
             content={draftContent}
             finalAnalysis={finalAnalysis}
             selectedAngle={selectedAngle}
+          />
+
+          {/* Audience Analysis Modal */}
+          <AudienceModal
+            isOpen={audienceModalOpen}
+            onClose={() => setAudienceModalOpen(false)}
+            draftContent={draftContent}
           />
         </FadeIn>
       </div>

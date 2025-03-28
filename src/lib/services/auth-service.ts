@@ -1,5 +1,6 @@
 import apiClient from '../api-client'
 import { LoginCredentials, User, AuthResponse } from '../types/auth'
+import { jwtDecode } from 'jwt-decode'
 
 const AuthService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
@@ -12,6 +13,20 @@ const AuthService = {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     })
+    
+    // Check the token for impersonation flag
+    if (response.data.access_token) {
+      try {
+        const tokenData = jwtDecode(response.data.access_token)
+        if (tokenData && 'imp' in tokenData && tokenData.imp === true) {
+          // Mark user as being impersonated if the token has the flag
+          response.data.user.is_impersonated = true
+        }
+      } catch (e) {
+        console.error('Error decoding token:', e)
+      }
+    }
+    
     return response.data
   },
   
@@ -21,11 +36,38 @@ const AuthService = {
   
   switchUser: async (userId: number): Promise<AuthResponse> => {
     const response = await apiClient.post(`/auth/switch/${userId}`)
+    
+    // Set impersonation flag on the user
+    if (response.data.access_token) {
+      try {
+        // Always mark as impersonated when using the switch endpoint
+        response.data.user.is_impersonated = true
+      } catch (e) {
+        console.error('Error decoding token:', e)
+        // Fall back to always marking as impersonated
+        response.data.user.is_impersonated = true
+      }
+    }
+    
     return response.data
   },
   
   me: async (): Promise<User> => {
     const response = await apiClient.get('/auth/me')
+    
+    // Check for impersonation in the current token
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const tokenData = jwtDecode(token)
+        if (tokenData && 'imp' in tokenData && tokenData.imp === true) {
+          response.data.is_impersonated = true
+        }
+      } catch (e) {
+        console.error('Error decoding token:', e)
+      }
+    }
+    
     return response.data
   },
   
@@ -77,4 +119,4 @@ const AuthService = {
   }
 }
 
-export default AuthService 
+export default AuthService

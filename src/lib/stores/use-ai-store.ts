@@ -4,14 +4,14 @@ import {
   AIProcessRequest, 
   AIResponse,
   AIUsage, 
-  AudienceAnalysisResult, 
+  AudienceAnalysisResponse, 
   FinalAnalysisResult, 
   CopywriterSuggestion, 
   SmartSuggestion
 } from '../types/ai'
 
 interface AIState {
-  audienceAnalysisResults: Record<string, AudienceAnalysisResult>
+  audienceAnalysisResult: AudienceAnalysisResponse | null
   finalAnalysisResult: FinalAnalysisResult | null
   copywriterSuggestions: CopywriterSuggestion[] | null
   smartSuggestions: SmartSuggestion[] | null
@@ -21,7 +21,7 @@ interface AIState {
   
   process: (request: AIProcessRequest) => Promise<AIResponse | null>
   
-  getAudienceAnalysis: (content: string, audiences: string[]) => Promise<Record<string, AudienceAnalysisResult> | null>
+  getAudienceAnalysis: (content: string, audiences: string[]) => Promise<AudienceAnalysisResponse | null>
   getFinalAnalysis: (content: string, brief: Record<string, unknown>) => Promise<FinalAnalysisResult | null>
   getCopywriterSuggestions: (content: string, feedback: string) => Promise<CopywriterSuggestion[] | null>
   getSmartSuggestions: (surrounding_content: string, selected_text: string) => Promise<SmartSuggestion[] | null>
@@ -30,7 +30,7 @@ interface AIState {
 }
 
 export const useAIStore = create<AIState>((set) => ({
-  audienceAnalysisResults: {},
+  audienceAnalysisResult: null,
   finalAnalysisResult: null,
   copywriterSuggestions: null,
   smartSuggestions: null,
@@ -60,9 +60,9 @@ export const useAIStore = create<AIState>((set) => ({
   getAudienceAnalysis: async (content: string, audiences: string[]) => {
     try {
       set({ isLoading: true, error: null })
-      const results = await AIService.audienceAnalysis(content, audiences)
-      set({ audienceAnalysisResults: results, isLoading: false })
-      return results
+      const result = await AIService.audienceAnalysis(content, audiences)
+      set({ audienceAnalysisResult: result, isLoading: false })
+      return result
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
@@ -139,7 +139,7 @@ export const useAIStore = create<AIState>((set) => ({
   
   resetResults: () => {
     set({
-      audienceAnalysisResults: {},
+      audienceAnalysisResult: null,
       finalAnalysisResult: null,
       copywriterSuggestions: null,
       smartSuggestions: null

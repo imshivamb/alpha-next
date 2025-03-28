@@ -233,7 +233,7 @@ export default function ContentAnglesPage() {
 
   return (
     <PageTransition>
-      <div className="container max-w-7xl py-8">
+      <div className="container mx-auto max-w-7xl py-8">
         <FadeIn>
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold">Content Angles</h1>
