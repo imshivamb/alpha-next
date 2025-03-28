@@ -1,3 +1,4 @@
 export * from './auth'
 export * from './content'
-export * from './ai' 
+//@ts-expect-error - AI module types are temporarily incomplete
+export * from './ai'

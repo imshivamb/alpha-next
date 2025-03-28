@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentBrief } from "@/lib/types/content";
+import { ContentBrief, ParsedBriefData } from "@/lib/types/content";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export default function ContentBriefEditor({
     example_topics = [],
     dos_and_donts = {},
     content_format = {},
-  } = displayBrief.parsed_data as any;
+  } = displayBrief.parsed_data as ParsedBriefData;
 
   // Helper functions for array manipulation
   const addArrayItem = (path: string, items: string[]) => {
@@ -269,6 +269,10 @@ export default function ContentBriefEditor({
                             newValue = e.target.value;
                           }
                         } catch (err) {
+                          console.error(
+                            "Error parsing content structure:",
+                            err
+                          );
                           // If parsing fails, just use the string value
                           newValue = e.target.value;
                         }
@@ -323,7 +327,7 @@ export default function ContentBriefEditor({
 
           {isEditing ? (
             <div className="space-y-2">
-              {example_topics.map((topic, index) => (
+              {example_topics.map((topic: string, index: number) => (
                 <div key={index} className="flex items-center gap-2">
                   <input
                     type="text"
@@ -370,7 +374,7 @@ export default function ContentBriefEditor({
           ) : (
             <div className="space-y-2">
               {example_topics && example_topics.length > 0 ? (
-                example_topics.map((topic, index) => (
+                example_topics.map((topic: string, index: number) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-md">
                     {topic}
                   </div>
@@ -527,7 +531,7 @@ export default function ContentBriefEditor({
                 ))
               ) : (
                 <div className="p-3 bg-gray-50 rounded-md italic col-span-2">
-                  No do's and don'ts provided
+                  No do&apos;s and don&apos;ts provided
                 </div>
               )}
             </div>
@@ -561,6 +565,7 @@ export default function ContentBriefEditor({
                           newValue = e.target.value;
                         }
                       } catch (err) {
+                        console.error("Error parsing content format:", err);
                         // If parsing fails, just use the string value
                         newValue = e.target.value;
                       }

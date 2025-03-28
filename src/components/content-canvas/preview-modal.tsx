@@ -1,43 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { FadeIn, ScaleIn, StaggeredChildren } from "@/components/ui/animations";
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FadeIn, StaggeredChildren, ScaleIn } from "@/components/ui/animations";
-import {
-  ThumbsUp,
-  MessageSquare,
-  Share2,
-  Send,
-  UserCircle2,
-  RefreshCw,
-  CheckCircle2,
-  Award,
-  LineChart,
-  BookOpen,
-  BarChart3,
-  Lightbulb,
-} from "lucide-react";
-import { ContentAngle } from "@/lib/types/content";
-import { FinalAnalysisResult } from "@/lib/types/ai";
-import { useAIStore } from "@/lib/stores/use-ai-store";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAIStore } from "@/lib/stores/use-ai-store";
+import { FinalAnalysisResult } from "@/lib/types/ai";
+import { ContentAngle } from "@/lib/types/content";
+import {
+  Award,
+  BarChart3,
+  BookOpen,
+  CheckCircle2,
+  Lightbulb,
+  LineChart,
+  MessageSquare,
+  RefreshCw,
+  Send,
+  Share2,
+  ThumbsUp,
+  UserCircle2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -98,11 +90,11 @@ export function PreviewModal({
   };
 
   // Get score color
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return "text-green-600";
-    if (score >= 6) return "text-amber-500";
-    return "text-red-500";
-  };
+  // const getScoreColor = (score: number) => {
+  //   if (score >= 8) return "text-green-600";
+  //   if (score >= 6) return "text-amber-500";
+  //   return "text-red-500";
+  // };
 
   // Get score description
   const getScoreDescription = (score: number) => {
@@ -115,12 +107,12 @@ export function PreviewModal({
     return "Needs Improvement";
   };
 
-  // Get progress color for score
-  const getProgressColor = (score: number) => {
-    if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-amber-500";
-    return "bg-red-500";
-  };
+  // // Get progress color for score
+  // const getProgressColor = (score: number) => {
+  //   if (score >= 8) return "bg-green-500";
+  //   if (score >= 6) return "bg-amber-500";
+  //   return "bg-red-500";
+  // };
 
   // Format the post content with proper line breaks
   const formattedContent = content.split("\n").map((line, i) =>

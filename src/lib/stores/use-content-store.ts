@@ -398,7 +398,33 @@ export const useContentStore = create<ContentState>((set, get) => ({
   enhanceDraft: async (userId: number, draftContent: string, options?: DraftEnhanceOptions) => {
     try {
       set({ draftLoading: true, draftError: null })
-      const enhancedDraft = await ContentService.enhanceDraft(userId, draftContent, options)
+      
+      // Get the current draft
+      const currentDraft = get().draft
+      if (!currentDraft) {
+        throw new Error('No draft found to enhance')
+      }
+
+      // Call the service with proper options type casting
+      const enhancedContent = await ContentService.enhanceDraft(
+        userId, 
+        draftContent, 
+        options as Record<string, unknown>
+      )
+      
+      // Ensure we have a proper Draft object
+      const enhancedDraft: Draft = {
+        id: currentDraft.id,
+        user_id: currentDraft.user_id,
+        brief_id: currentDraft.brief_id,
+        angle_id: currentDraft.angle_id,
+        content: enhancedContent.content,
+        version: currentDraft.version + 1,
+        ai_feedback: enhancedContent.feedback,
+        created_at: currentDraft.created_at,
+        updated_at: new Date().toISOString()
+      }
+      
       set({ draft: enhancedDraft, draftLoading: false })
       return enhancedDraft
     } catch (error) {

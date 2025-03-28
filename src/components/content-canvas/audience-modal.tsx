@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { FadeIn } from "@/components/ui/animations";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { FadeIn } from "@/components/ui/animations";
+import { Users } from "lucide-react";
 import { AudienceAnalysis } from "./audience-analysis";
-import { Users, X } from "lucide-react";
 
 interface AudienceModalProps {
   isOpen: boolean;

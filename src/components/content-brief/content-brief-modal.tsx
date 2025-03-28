@@ -8,30 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import useCurrentUser from "@/lib/hooks/use-current-user";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useContentStore } from "@/lib/stores/use-content-store";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertCircle,
-  Check,
-  ChevronRight,
-  FileText,
-  FileUp,
-  Loader2,
-  Target,
-  Upload,
-  Users,
-  X,
-  Calendar,
-  Clock,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { CalendarEntry } from "@/lib/types/content";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -39,8 +18,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useCurrentUser from "@/lib/hooks/use-current-user";
+import { useContentStore } from "@/lib/stores/use-content-store";
+import { CalendarEntry } from "@/lib/types/content";
 import { format } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertCircle,
+  Calendar,
+  Check,
+  ChevronRight,
+  Clock,
+  FileText,
+  FileUp,
+  Loader2,
+  Target,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface ContentBriefModalProps {
   open: boolean;

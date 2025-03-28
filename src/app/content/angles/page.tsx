@@ -208,15 +208,22 @@ export default function ContentAnglesPage() {
         const section = parts[1];
         const property = parts[2];
 
+        // Type cast the parsed_data to Record<string, unknown> for safe indexing
+        const sectionData = editableBrief.parsed_data
+          ? (
+              editableBrief.parsed_data as Record<
+                string,
+                Record<string, unknown>
+              >
+            )[section] || {}
+          : {};
+
         setEditableBrief({
           ...editableBrief,
           parsed_data: {
             ...editableBrief.parsed_data,
             [section]: {
-              ...(editableBrief.parsed_data?.[section] as Record<
-                string,
-                unknown
-              >),
+              ...sectionData,
               [property]: value,
             },
           },

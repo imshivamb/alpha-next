@@ -1,17 +1,15 @@
 import apiClient from '../api-client'
 import {
-  AIProcessRequest,
-  AIResponse,
-  AIUsage,
-  AudienceAnalysisResult,
-  AudienceSegment,
-  FinalAnalysisResult,
-  CopywriterSuggestion,
-  SmartSuggestion,
-  ContentAngleSuggestionsResponse,
-  DraftContentResponse,
-  EnhanceDraftResponse,
-  AudienceAnalysisResponse
+    AIProcessRequest,
+    AIResponse,
+    AIUsage,
+    AudienceAnalysisResponse,
+    ContentAngleSuggestionsResponse,
+    CopywriterSuggestion,
+    DraftContentResponse,
+    EnhanceDraftResponse,
+    FinalAnalysisResult,
+    SmartSuggestion
 } from '../types/ai'
 
 const AIService = {

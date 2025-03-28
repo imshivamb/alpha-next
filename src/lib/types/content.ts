@@ -3,11 +3,30 @@ export interface ContentBrief {
   user_id: number
   title: string
   content: string
-  parsed_data: Record<string, unknown>
+  parsed_data: ParsedBriefData
   filename?: string
   file_type?: string
   created_at: string
   updated_at: string
+}
+
+export interface ParsedBriefData {
+  title?: string
+  description?: string
+  audience?: Record<string, string>
+  goals?: Record<string, string>
+  content_direction?: string
+  subject_matter_context?: string
+  voice_tone?: Record<string, string>
+  content_structure?: Record<string, string | object>
+  example_topics?: string[]
+  dos_and_donts?: {
+    dos?: string[]
+    donts?: string[]
+    [key: string]: string[] | undefined
+  }
+  content_format?: Record<string, string | object>
+  [key: string]: unknown
 }
 
 export interface ContentAngle {

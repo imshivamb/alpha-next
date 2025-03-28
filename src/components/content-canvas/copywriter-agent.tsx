@@ -1,31 +1,30 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { useAIStore } from "@/lib/stores/use-ai-store";
-import { CopywriterSuggestion } from "@/lib/types/ai";
-import {
-  Sparkles,
-  RefreshCw,
-  Send,
-  ChevronRight,
-  Zap,
-  Wand2,
-  Bot,
-  User,
-  ClipboardCheck,
-  ArrowUpRight,
-} from "lucide-react";
 import { FadeIn, ScaleIn, StaggeredChildren } from "@/components/ui/animations";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
+import { useAIStore } from "@/lib/stores/use-ai-store";
+import { CopywriterSuggestion } from "@/lib/types/ai";
+import { cn } from "@/lib/utils";
+import {
+  ArrowUpRight,
+  Bot,
+  ClipboardCheck,
+  RefreshCw,
+  Send,
+  Sparkles,
+  User,
+  Wand2,
+  Zap,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface CopywriterAgentProps {
   draftContent: string;
